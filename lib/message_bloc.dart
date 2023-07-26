@@ -10,10 +10,15 @@ class MessageBloc {
   final _messageRepo = locator<MessageRepository>();
 
   final _subjectMessageList = BehaviorSubject<List<String>>.seeded([]);
+  final _subjectPrimaryMessage = BehaviorSubject<String>.seeded("");
 
   ValueStream<List<String>> get messageListStream => _subjectMessageList.stream;
+  ValueStream<String> get primaryMessageStream => _subjectPrimaryMessage.stream;
 
   Future<void> loadMessage() async {
+    final newPrimaryMessage = await _messageRepo.getPrimaryMessage();
+    _primaryMessage = newPrimaryMessage;
+    _subjectPrimaryMessage.add(_primaryMessage);
     final newList = await _messageRepo.getMessageList();
     _subjectMessageList.add(newList);
   }
@@ -27,6 +32,7 @@ class MessageBloc {
   Future<void> setPrimaryMessage(String message) async {
     _messageRepo.setPrimaryMessage(message);
     _primaryMessage = await _messageRepo.getPrimaryMessage();
+    _subjectPrimaryMessage.add(_primaryMessage);
   }
 
   void dispose() {

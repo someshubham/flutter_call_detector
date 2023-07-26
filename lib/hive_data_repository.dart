@@ -1,17 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_call_detector/hive_constants.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:stream_transform/stream_transform.dart';
 
 abstract class MessageRepository {
   Future<void> addMessage(String message);
   Future<List<String>> getMessageList();
   Future<void> setPrimaryMessage(String message);
   Future<String> getPrimaryMessage();
-
-  Stream<List<String>> getMessageListStream();
 }
 
 class MockMessageRepositoryImpl implements MessageRepository {
@@ -37,11 +33,6 @@ class MockMessageRepositoryImpl implements MessageRepository {
   @override
   Future<void> setPrimaryMessage(String message) async {
     primaryMessage = message;
-  }
-
-  @override
-  Stream<List<String>> getMessageListStream() async* {
-    yield initialData;
   }
 }
 
@@ -89,15 +80,6 @@ class HiveMessageRepositoryImpl implements MessageRepository {
     }
   }
 
-  Future<Box<E>> _openBox<E>(String type) async {
-    try {
-      final box = hive.box<E>(type);
-      return box;
-    } catch (e) {
-      throw Exception(e);
-    }
-  }
-
   @override
   Future<void> setPrimaryMessage(String message) async {
     try {
@@ -125,33 +107,5 @@ class HiveMessageRepositoryImpl implements MessageRepository {
     } catch (e) {
       throw Exception(e);
     }
-  }
-
-  @override
-  Stream<List<String>> getMessageListStream() async* {
-    yield (hive
-            .box(HiveConstants.phoneDataBox)
-            .get(HiveConstants.messageListKey) as List)
-        .map((e) => e.toString())
-        .toList();
-    yield* hive
-        .box(HiveConstants.phoneDataBox)
-        .watch(key: HiveConstants.messageListKey)
-        .transform(StreamTransformer<BoxEvent, List<String>>.fromHandlers(
-            handleData: (box, sink) {
-      sink.add((box.value as List<dynamic>).map((e) => e.toString()).toList());
-    })).asBroadcastStream();
-    // .combineLatest(
-    //   hive
-    //       .box(HiveConstants.phoneDataBox)
-    //       .watch(key: HiveConstants.primaryMessageKey)
-    //       .transform(
-    //           StreamTransformer.fromHandlers(handleData: (box, sink) {
-    //     print(box.value);
-    //     sink.add(box.value as String);
-    //   })),
-    //   (listData, primaryData) =>
-    //       (listData as String, primaryData as List<String>),
-    // )
   }
 }

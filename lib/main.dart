@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_call_detector/di.dart';
@@ -30,13 +31,11 @@ class PhoneCallDetectorPage extends StatefulWidget {
 class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
   var directSms = DirectSms();
   PhoneState status = PhoneState.nothing();
-  bool granted = false;
+  StreamSubscription<PhoneState>? phoneStateSub;
 
   final messageBloc = MessageBloc();
 
   final messageInputController = TextEditingController(text: "");
-
-  String statusMessage = "";
 
   _sendSms({required String number, required String message}) async {
     final permission = Permission.sms.request();
@@ -45,10 +44,17 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
     }
   }
 
-  Future<bool> requestPermission() async {
-    var status = await Permission.phone.request();
+  @override
+  void initState() {
+    super.initState();
+    messageBloc.loadMessage();
+  }
 
-    return switch (status) {
+  Future<bool> requestSmsAndPhonePermission() async {
+    var phonePermissionStatus = await Permission.phone.request();
+    final smsPermissionStatus = await Permission.sms.request();
+
+    final isPhonePermissionGranted = switch (phonePermissionStatus) {
       PermissionStatus.denied ||
       PermissionStatus.restricted ||
       PermissionStatus.limited ||
@@ -56,27 +62,20 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
         false,
       PermissionStatus.provisional || PermissionStatus.granted => true,
     };
-  }
 
-  @override
-  void initState() {
-    super.initState();
-    if (Platform.isIOS) setStream();
-    messageBloc.loadMessage();
-  }
+    final isSmsPermissionGranted = smsPermissionStatus.isGranted;
 
-  bool get isIncomingCall =>
-      status.status == PhoneStateStatus.CALL_INCOMING ||
-      status.status == PhoneStateStatus.CALL_STARTED;
+    return isPhonePermissionGranted && isSmsPermissionGranted;
+  }
 
   void setStream() {
-    PhoneState.stream.listen((event) {
+    phoneStateSub = PhoneState.stream.listen((event) {
       setState(() {
         status = event;
       });
 
       if (status.status == PhoneStateStatus.CALL_ENDED) {
-        _sendSms(number: status.number!, message: "This is a test message");
+        _sendSms(number: status.number!, message: messageBloc.primaryMessage);
       }
     });
   }
@@ -91,8 +90,15 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
       body: Center(
         child: Column(
           children: [
-            if (messageBloc.primaryMessage.isNotEmpty)
-              Text("Text Message: ${messageBloc.primaryMessage}"),
+            StreamBuilder<String>(
+                stream: messageBloc.primaryMessageStream,
+                builder: (context, snapshot) {
+                  final str = snapshot.data;
+                  if (str?.isEmpty ?? true) {
+                    return const Offstage();
+                  }
+                  return Text("Text Message: ${messageBloc.primaryMessage}");
+                }),
             Row(
               children: [
                 Expanded(
@@ -132,13 +138,55 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
                         title: Text(list[index]),
                         onTap: () {
                           messageBloc.setPrimaryMessage(list[index]);
-                          setState(() {});
                         },
                       );
                     },
                   );
                 },
               ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(phoneStateSub == null
+                    ? "No Service is running"
+                    : "Service is running"),
+              ],
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      requestSmsAndPhonePermission().then((value) {
+                        if (value && phoneStateSub == null) {
+                          setStream();
+                        }
+                        setState(() {});
+                      });
+                    },
+                    child: const Text("Start Service"),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      phoneStateSub = null;
+                      setState(() {});
+                    },
+                    child: const Text("Stop Service"),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -207,26 +255,10 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
     // );
   }
 
-  IconData getIcons() {
-    return switch (status.status) {
-      PhoneStateStatus.NOTHING => Icons.clear,
-      PhoneStateStatus.CALL_INCOMING => Icons.add_call,
-      PhoneStateStatus.CALL_STARTED => Icons.call,
-      PhoneStateStatus.CALL_ENDED => Icons.call_end,
-    };
-  }
-
-  Color getColor() {
-    return switch (status.status) {
-      PhoneStateStatus.NOTHING || PhoneStateStatus.CALL_ENDED => Colors.red,
-      PhoneStateStatus.CALL_INCOMING => Colors.green,
-      PhoneStateStatus.CALL_STARTED => Colors.orange,
-    };
-  }
-
   @override
   void dispose() {
     messageBloc.dispose();
+    phoneStateSub?.cancel();
     super.dispose();
   }
 }
