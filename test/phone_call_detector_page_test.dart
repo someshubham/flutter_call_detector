@@ -41,7 +41,7 @@ void main() {
         await bddSetUp(tester);
         await theAppIsRunning(tester);
         await iWait(tester);
-        await iSeeWidgetWithKey(tester, ValueKey("list-offstage"));
+        await iSeeWidgetWithKey(tester, const ValueKey("list-offstage"));
       } finally {
         await bddTearDown(tester);
       }
@@ -84,7 +84,7 @@ void main() {
         await iTapText(tester, "Save");
         await iWait(tester);
         await iSeeWidgetTimes(tester, ListTile, 2);
-        await iTapListtileWithKey(tester, ValueKey(1));
+        await iTapListtileWithKey(tester, const ValueKey(1));
         await iSeeListtileWidgetIsSelected(tester);
         await iSeeText(tester, "Text Message: bye");
       } finally {
