@@ -200,6 +200,7 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
   }
 
   void stopService() {
+    phoneStateSub?.cancel();
     phoneStateSub = null;
     setState(() {});
   }
