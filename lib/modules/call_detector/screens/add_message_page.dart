@@ -13,7 +13,7 @@ class AddMessagePage extends StatefulWidget {
 class _AddMessagePageState extends State<AddMessagePage> {
   final messageInputController = TextEditingController(text: "");
 
-  get messageBloc => widget.messageBloc;
+  MessageBloc get messageBloc => widget.messageBloc;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +36,8 @@ class _AddMessagePageState extends State<AddMessagePage> {
                 ElevatedButton(
                   onPressed: () {
                     messageBloc.saveMessage(messageInputController.text);
+                    messageBloc.setPrimaryMessage(messageInputController.text);
+                    messageInputController.clear();
                   },
                   child: const Text("Save"),
                 ),

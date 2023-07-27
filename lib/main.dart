@@ -11,8 +11,16 @@ Future<void> main() async {
   await Hive.openBox(HiveConstants.phoneDataBox);
   AppInjector().configure(Flavor.prod);
   runApp(
-    const MaterialApp(
-      home: PhoneCallDetectorPage(),
+    MaterialApp(
+      theme: ThemeData.from(
+        useMaterial3: true,
+        colorScheme: const ColorScheme.light(),
+      ),
+      darkTheme: ThemeData.from(
+        useMaterial3: true,
+        colorScheme: const ColorScheme.dark(),
+      ),
+      home: const PhoneCallDetectorPage(),
     ),
   );
 }

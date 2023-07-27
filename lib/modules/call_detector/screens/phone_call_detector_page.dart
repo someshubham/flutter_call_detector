@@ -17,15 +17,7 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
   var directSms = DirectSms();
   PhoneState status = PhoneState.nothing();
   StreamSubscription<PhoneState>? phoneStateSub;
-
   final messageBloc = MessageBloc();
-
-  _sendSms({required String number, required String message}) async {
-    final permission = Permission.sms.request();
-    if (await permission.isGranted) {
-      directSms.sendSms(message: message, phone: number);
-    }
-  }
 
   @override
   void initState() {
@@ -51,7 +43,7 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
     return isPhonePermissionGranted && isSmsPermissionGranted;
   }
 
-  void setStream() {
+  void _startListeningToPhoneCalls() {
     phoneStateSub = PhoneState.stream.listen((event) {
       setState(() {
         status = event;
@@ -63,6 +55,22 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
     });
   }
 
+  _sendSms({required String number, required String message}) async {
+    final permission = Permission.sms.request();
+    if (await permission.isGranted) {
+      directSms.sendSms(message: message, phone: number);
+    }
+  }
+
+  void navigateToEditMessage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddMessagePage(messageBloc: messageBloc),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,136 +78,127 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
         title: const Text("Dk Phone Call Detector"),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          StreamBuilder<String>(
-            stream: messageBloc.primaryMessageStream,
-            builder: (context, snapshot) {
-              final str = snapshot.data;
-              if (str?.isEmpty ?? true) {
-                return const Offstage();
-              }
-              return Text("Text Message: ${messageBloc.primaryMessage}");
-            },
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AddMessagePage(messageBloc: messageBloc),
-                ),
-              );
-            },
-            icon: const Icon(Icons.add),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(phoneStateSub == null
-                    ? "No Service is running"
-                    : "Service is running"),
-              ],
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      requestSmsAndPhonePermission().then((value) {
-                        if (value && phoneStateSub == null) {
-                          setStream();
-                        }
-                        setState(() {});
-                      });
-                    },
-                    child: const Text("Start Service"),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      phoneStateSub = null;
-                      setState(() {});
-                    },
-                    child: const Text("Stop Service"),
-                  ),
-                ),
-              ],
+            StreamBuilder<String>(
+              stream: messageBloc.primaryMessageStream,
+              builder: (context, snapshot) {
+                final str = snapshot.data;
+                if (str?.isEmpty ?? true) {
+                  return Column(
+                    children: [
+                      const Text(
+                        "Your SMS Message appears here\nPress the + icon to add",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: navigateToEditMessage,
+                        icon: const Icon(
+                          Icons.add,
+                          size: 28,
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return Column(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: navigateToEditMessage,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 4),
+                          child: Text(
+                            messageBloc.primaryMessage,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Tap on message to update",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
       ),
-    );
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: StreamBuilder<String>(
+        stream: messageBloc.primaryMessageStream,
+        builder: (context, snapshot) {
+          final isPrimaryMessageSet =
+              !snapshot.hasData || (snapshot.data?.isEmpty ?? false);
+          if (isPrimaryMessageSet) {
+            return const Offstage();
+          }
 
-    // return Scaffold(
-    //   appBar: AppBar(
-    //     title: const Text("Phone State"),
-    //     centerTitle: true,
-    //   ),
-    //   body: Center(
-    //     child: Column(
-    //       mainAxisAlignment: MainAxisAlignment.center,
-    //       crossAxisAlignment: CrossAxisAlignment.center,
-    //       children: [
-    //         if (Platform.isAndroid)
-    //           MaterialButton(
-    //             onPressed: !granted
-    //                 ? () async {
-    //                     bool temp = await requestPermission();
-    //                     setState(() {
-    //                       granted = temp;
-    //                       if (granted) {
-    //                         setStream();
-    //                       }
-    //                     });
-    //                   }
-    //                 : null,
-    //             child: const Text("Request permission of Phone"),
-    //           ),
-    //         Column(
-    //           children: [
-    //             const Text("Text Message"),
-    //             TextField(
-    //               key: ValueKey("msg"),
-    //               controller: messageInputController,
-    //             ),
-    //             ElevatedButton(
-    //               onPressed: () {
-    //                 hiveRepo.addMessage(messageInputController.text);
-    //               },
-    //               child: const Text("Save"),
-    //             ),
-    //             Text(statusMessage),
-    //           ],
-    //         ),
-    //         const Text(
-    //           "Status of call",
-    //           style: TextStyle(fontSize: 24),
-    //         ),
-    //         if (status.status == PhoneStateStatus.CALL_INCOMING ||
-    //             status.status == PhoneStateStatus.CALL_STARTED)
-    //           Text(
-    //             "Number: ${status.number}",
-    //             style: const TextStyle(fontSize: 24),
-    //           ),
-    //         Icon(
-    //           getIcons(),
-    //           color: getColor(),
-    //           size: 80,
-    //         )
-    //       ],
-    //     ),
-    //   ),
-    // );
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FloatingActionButton.large(
+                elevation: 2,
+                tooltip:
+                    phoneStateSub == null ? "Start Service" : "Stop Serice",
+                onPressed: phoneStateSub == null ? startService : stopService,
+                backgroundColor: phoneStateSub == null
+                    ? Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).primaryColorLight
+                        : Theme.of(context).primaryColor
+                    : Colors.red,
+                child: Icon(
+                  phoneStateSub == null ? Icons.play_arrow : Icons.pause,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                phoneStateSub == null
+                    ? "Tap to Start Service"
+                    : "Service is running",
+                style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[700]
+                        : Colors.grey[500]),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void startService() {
+    requestSmsAndPhonePermission().then((value) {
+      if (value && phoneStateSub == null) {
+        _startListeningToPhoneCalls();
+      }
+      setState(() {});
+    });
+  }
+
+  void stopService() {
+    phoneStateSub = null;
+    setState(() {});
   }
 
   @override
