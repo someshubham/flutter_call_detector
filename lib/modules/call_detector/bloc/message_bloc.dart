@@ -1,5 +1,5 @@
-import 'package:flutter_call_detector/di.dart';
-import 'package:flutter_call_detector/hive_data_repository.dart';
+import 'package:flutter_call_detector/config/di.dart';
+import 'package:flutter_call_detector/repository/message_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
 class MessageBloc {

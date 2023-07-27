@@ -1,40 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter_call_detector/hive_constants.dart';
+import 'package:flutter_call_detector/constants/hive_constants.dart';
+import 'package:flutter_call_detector/repository/message_repository.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
-abstract class MessageRepository {
-  Future<void> addMessage(String message);
-  Future<List<String>> getMessageList();
-  Future<void> setPrimaryMessage(String message);
-  Future<String> getPrimaryMessage();
-}
-
-class MockMessageRepositoryImpl implements MessageRepository {
-  List<String> initialData = [];
-  var primaryMessage = "";
-  MockMessageRepositoryImpl();
-
-  @override
-  Future<void> addMessage(String message) async {
-    initialData.add(message);
-  }
-
-  @override
-  Future<List<String>> getMessageList() async {
-    return initialData;
-  }
-
-  @override
-  Future<String> getPrimaryMessage() async {
-    return primaryMessage;
-  }
-
-  @override
-  Future<void> setPrimaryMessage(String message) async {
-    primaryMessage = message;
-  }
-}
 
 class HiveMessageRepositoryImpl implements MessageRepository {
   final HiveInterface hive;

@@ -1,5 +1,7 @@
-import 'package:flutter_call_detector/flavor.dart';
-import 'package:flutter_call_detector/hive_data_repository.dart';
+import 'package:flutter_call_detector/config/flavor.dart';
+import 'package:flutter_call_detector/repository/hive_message_repository_impl.dart';
+import 'package:flutter_call_detector/repository/message_repository.dart';
+import 'package:flutter_call_detector/repository/mock/mock_message_repository_impl.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
 
