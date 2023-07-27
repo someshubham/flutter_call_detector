@@ -75,7 +75,10 @@ class _PhoneCallDetectorPageState extends State<PhoneCallDetectorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dk Phone Call Detector"),
+        title: const Text(
+          "DK Phone Call Detector",
+          style: TextStyle(fontSize: 16),
+        ),
         centerTitle: true,
       ),
       body: Center(

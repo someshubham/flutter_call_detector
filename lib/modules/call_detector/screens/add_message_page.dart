@@ -18,28 +18,49 @@ class _AddMessagePageState extends State<AddMessagePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: const Text(
+          "Add SMS Messages",
+          style: TextStyle(fontSize: 16),
+        ),
+        centerTitle: true,
+      ),
       body: Center(
         child: Column(
           children: [
-            Row(
+            Column(
               children: [
-                Expanded(
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
                   child: TextField(
                     key: const ValueKey("msg"),
                     controller: messageInputController,
-                    decoration: const InputDecoration(
-                      hintText: "Enter Custom Message",
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      hintText: "Your Preferred SMS",
                     ),
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    messageBloc.saveMessage(messageInputController.text);
-                    messageBloc.setPrimaryMessage(messageInputController.text);
-                    messageInputController.clear();
-                  },
-                  child: const Text("Save"),
+                Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            messageBloc
+                                .saveMessage(messageInputController.text);
+                            messageBloc
+                                .setPrimaryMessage(messageInputController.text);
+                            messageInputController.clear();
+                          },
+                          child: const Text("Save"),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -53,14 +74,25 @@ class _AddMessagePageState extends State<AddMessagePage> {
                       key: ValueKey("list-offstage"),
                     );
                   }
-                  return ListView.builder(
+                  return ListView.separated(
                     shrinkWrap: true,
                     itemCount: list!.length,
+                    separatorBuilder: (_, __) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Divider(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]
+                            : Colors.grey[300],
+                      ),
+                    ),
                     itemBuilder: (context, index) {
                       return ListTile(
                         key: ValueKey(index),
                         selected: list[index] == messageBloc.primaryMessage,
                         title: Text(list[index]),
+                        trailing: list[index] == messageBloc.primaryMessage
+                            ? const Icon(Icons.check)
+                            : null,
                         onTap: () {
                           messageBloc.setPrimaryMessage(list[index]);
                           setState(() {});
